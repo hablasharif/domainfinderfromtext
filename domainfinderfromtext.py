@@ -73,6 +73,13 @@ current_datetime = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
 # Initialize the serial number
 serial_number = 1
 
+# Extract the directory path from the HTML file path
+html_dir_path = os.path.dirname(html_file_path)
+
+# Check if the directory exists, and if not, create it
+if not os.path.exists(html_dir_path):
+    os.makedirs(html_dir_path)
+
 # Check if the HTML file exists, and if not, create it with a header
 if not os.path.exists(html_file_path):
     with open(html_file_path, 'w', encoding='utf-8') as file:
