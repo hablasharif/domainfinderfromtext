@@ -64,21 +64,14 @@ st.title("Domain Extractor, Sorter, and Title Checker App")
 # Input text area for user input
 input_text = st.text_area("Enter text:")
 
-# Input text box for the file path
-html_file_path = st.text_input("Enter HTML file path:", value="C:/Users/style/Downloads/found_domains.html")
-
 # Get the current date and time in the specified format
 current_datetime = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
 
+# Create an HTML file path
+html_file_path = os.path.join(os.path.expanduser('~'), 'Downloads', 'found_domains.html')
+
 # Initialize the serial number
 serial_number = 1
-
-# Extract the directory path from the HTML file path
-html_dir_path = os.path.dirname(html_file_path)
-
-# Check if the directory exists, and if not, create it
-if not os.path.exists(html_dir_path):
-    os.makedirs(html_dir_path)
 
 # Check if the HTML file exists, and if not, create it with a header
 if not os.path.exists(html_file_path):
@@ -99,6 +92,9 @@ else:
 if st.button("Extract Domains"):
     # Extract and sort unique domains and main domains from the input text
     sorted_domains, main_domains = extract_and_sort_domains(input_text)
+
+    # Filter out invalid domains
+    sorted_domains = [domain for domain in sorted_domains if not domain.startswith('https://39267-jawan.html')]
 
     # Remove duplicates from sorted_domains by checking against existing_domains
     sorted_domains = [domain for domain in sorted_domains if domain not in existing_domains]
