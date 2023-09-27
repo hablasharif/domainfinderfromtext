@@ -64,14 +64,20 @@ st.title("Domain Extractor, Sorter, and Title Checker App")
 # Input text area for user input
 input_text = st.text_area("Enter text:")
 
-# Input text box for the file path
-html_file_path = st.text_input("Enter HTML file path:", value="C:/Users/style/Downloads/found_domains.html")
+# File upload widget for custom HTML file
+uploaded_file = st.file_uploader("Upload your custom HTML file", type=["html"])
 
 # Get the current date and time in the specified format
 current_datetime = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
 
 # Initialize the serial number
 serial_number = 1
+
+# Determine the HTML file path based on user input or uploaded file
+if uploaded_file is not None:
+    html_file_path = uploaded_file.name
+else:
+    html_file_path = st.text_input("Enter HTML file path:", value="C:/Users/style/Downloads/found_domains.html")
 
 # Extract the directory path from the HTML file path
 html_dir_path = os.path.dirname(html_file_path)
