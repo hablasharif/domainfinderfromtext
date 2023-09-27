@@ -64,9 +64,6 @@ st.title("Domain Extractor, Sorter, and Title Checker App")
 # Input file upload
 uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
 
-# Input text area for user input of multiple domains
-input_text = st.text_area("Enter multiple domains (one domain per line)")
-
 # Get the current date and time in the specified format
 current_datetime = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
 
@@ -74,69 +71,65 @@ if uploaded_file is not None:
     # Read the content of the uploaded file
     input_text = uploaded_file.read()
 
-# Create an HTML file path
-html_file_path = os.path.join(os.path.expanduser('~'), 'Downloads', 'found_domains.html')
+    # Create an HTML file path
+    html_file_path = os.path.join(os.path.expanduser('~'), 'Downloads', 'found_domains.html')
 
-# Initialize the serial number
-serial_number = 1
+    # Initialize the serial number
+    serial_number = 1
 
-# Check if the HTML file exists, and if not, create it with a header
-if not os.path.exists(html_file_path):
-    with open(html_file_path, 'w', encoding='utf-8') as file:
-        file.write("<html>\n<head><title>Found Domains and Titles</title></head>\n<body>\n")
-        file.write(f'<p style="background-color: pink; padding: 5px;">Extraction Date: {current_datetime}</p>\n')
-else:
-    # If the HTML file exists, read it to find the highest serial number and existing domains
-    with open(html_file_path, 'r', encoding='utf-8') as file:
-        html_content = file.read()
-        # Find the highest serial number
-        highest_serial = max([int(match.group(1)) for match in re.finditer(r"Serial Number: (\d+)", html_content)], default=1)
-        serial_number = highest_serial + 1
-        # Extract existing domains to check for duplicates later
-        existing_domains = set(re.findall(r"<a href='(https?://[^']+)'.*?</a>", html_content))
+    # Check if the HTML file exists, and if not, create it with a header
+    if not os.path.exists(html_file_path):
+        with open(html_file_path, 'w', encoding='utf-8') as file:
+            file.write("<html>\n<head><title>Found Domains and Titles</title></head>\n<body>\n")
+            file.write(f'<p style="background-color: pink; padding: 5px;">Extraction Date: {current_datetime}</p>\n')
+    else:
+        # If the HTML file exists, read it to find the highest serial number and existing domains
+        with open(html_file_path, 'r', encoding='utf-8') as file:
+            html_content = file.read()
+            # Find the highest serial number
+            highest_serial = max([int(match.group(1)) for match in re.finditer(r"Serial Number: (\d+)", html_content)], default=1)
+            serial_number = highest_serial + 1
+            # Extract existing domains to check for duplicates later
+            existing_domains = set(re.findall(r"<a href='(https?://[^']+)'.*?</a>", html_content))
 
-# Add a button to extract and display domain information
-if st.button("Extract Domains"):
-    # Combine domains from both inputs (file and text area)
-    combined_domains = input_text.split('\n')
-    combined_domains = [domain.strip() for domain in combined_domains if domain.strip()]
+    # Add a button to extract and display domain information
+    if st.button("Extract Domains"):
+        # Extract and sort unique domains and main domains from the input text
+        sorted_domains, main_domains = extract_and_sort_domains(input_text)
 
-    # Extract and sort unique domains and main domains from the input text
-    sorted_domains, main_domains = extract_and_sort_domains('\n'.join(combined_domains))
+        # Filter out invalid domains
+        sorted_domains = [domain for domain in sorted_domains if not domain.startswith('https://39267-jawan.html')]
 
-    # Filter out invalid domains
-    sorted_domains = [domain for domain in sorted_domains if not domain.startswith('https://39267-jawan.html')]
+        # Remove duplicates from sorted_domains by checking against existing_domains
+        sorted_domains = [domain for domain in sorted_domains if domain not in existing_domains]
 
-    # Remove duplicates from sorted_domains by checking against existing_domains
-    sorted_domains = [domain for domain in sorted_domains if domain not in existing_domains]
+        # Display the total number of unique domains
+        st.write(f"Total Valid Domains Found: {len(sorted_domains)}")
 
-    # Display the total number of unique domains
-    st.write(f"Total Valid Domains Found: {len(sorted_domains)}")
+        # Display domain titles
+        st.header("Domain Titles:")
 
-    # Display domain titles
-    st.header("Domain Titles:")
+        # Create or open the existing HTML file in append mode with UTF-8 encoding
+        with open(html_file_path, 'a', encoding='utf-8') as file:
+            for domain in sorted_domains:
+                title, redirect_url = get_page_title(domain)
 
-    # Create or open the existing HTML file in append mode with UTF-8 encoding
-    with open(html_file_path, 'a', encoding='utf-8') as file:
-        for domain in sorted_domains:
-            title, redirect_url = get_page_title(domain)
+                # Check if the title is "Failed to establish a connection to the domain"
+                if title != "Failed to establish a connection to the domain":
+                    # Check if the title is "Title not available"
+                    if title != "Title not available":
+                        extracted_date = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
+                        row_color = random.choice(["lightgray", "lightpink", "lightblue"])
+                        
+                        # Append the new data to the existing HTML file with the serial number
+                        file.write(f"<p style='background-color: {row_color};'>Serial Number: {serial_number} <a href='{domain}' target='_blank'>{domain}</a>: {title} ({extracted_date})</p>\n")
+                        
+                        # Increment the serial number
+                        serial_number += 1
 
-            # Check if the title is "Failed to establish a connection to the domain"
-            if title != "Failed to establish a connection to the domain":
-                # Check if the title is "Title not available"
-                if title != "Title not available":
-                    extracted_date = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
-                    row_color = random.choice(["lightgray", "lightpink", "lightblue"])
-                    
-                    # Append the new data to the existing HTML file with the serial number
-                    file.write(f"<p style='background-color: {row_color};'>Serial Number: {serial_number} <a href='{domain}' target='_blank'>{domain}</a>: {title} ({extracted_date})</p>\n")
-                    
-                    # Increment the serial number
-                    serial_number += 1
+        # Provide a download link for the updated HTML file
+        st.markdown(f'<a href="file://{html_file_path}" download="found_domains.html">Click to download HTML file</a>', unsafe_allow_html=True)
 
-    # Provide a download link for the updated HTML file
-    st.markdown(f'<a href="file://{html_file_path}" download="found_domains.html">Click to download HTML file</a>', unsafe_allow_html=True)
-
-# Display the download button after the code completes its extraction
-if not uploaded_file and not input_text:
-    st.write("Please upload a text file or enter some domains to extract and display domain titles.")
+    # Display the download button after the code completes its extraction
+    if not input_text:
+        st.write("Please enter some text to extract domains and titles.")
