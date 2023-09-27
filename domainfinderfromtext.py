@@ -61,24 +61,24 @@ def get_page_title(url):
 # Streamlit app title
 st.title("Domain Extractor, Sorter, and Title Checker App")
 
-# Input text area for user input
-input_text = st.text_area("Enter text:")
+# Input file upload
+uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
 
-# Input text box for the file path
-html_file_path = st.text_input("Enter HTML file path:", value="C:/Users/style/Downloads/found_domains.html")
+# Input text area for user input of multiple domains
+input_text = st.text_area("Enter multiple domains (one domain per line)")
 
 # Get the current date and time in the specified format
 current_datetime = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
 
+if uploaded_file is not None:
+    # Read the content of the uploaded file
+    input_text = uploaded_file.read()
+
+# Create an HTML file path
+html_file_path = os.path.join(os.path.expanduser('~'), 'Downloads', 'found_domains.html')
+
 # Initialize the serial number
 serial_number = 1
-
-# Extract the directory path from the HTML file path
-html_dir_path = os.path.dirname(html_file_path)
-
-# Check if the directory exists, and if not, create it
-if not os.path.exists(html_dir_path):
-    os.makedirs(html_dir_path)
 
 # Check if the HTML file exists, and if not, create it with a header
 if not os.path.exists(html_file_path):
@@ -97,8 +97,15 @@ else:
 
 # Add a button to extract and display domain information
 if st.button("Extract Domains"):
+    # Combine domains from both inputs (file and text area)
+    combined_domains = input_text.split('\n')
+    combined_domains = [domain.strip() for domain in combined_domains if domain.strip()]
+
     # Extract and sort unique domains and main domains from the input text
-    sorted_domains, main_domains = extract_and_sort_domains(input_text)
+    sorted_domains, main_domains = extract_and_sort_domains('\n'.join(combined_domains))
+
+    # Filter out invalid domains
+    sorted_domains = [domain for domain in sorted_domains if not domain.startswith('https://39267-jawan.html')]
 
     # Remove duplicates from sorted_domains by checking against existing_domains
     sorted_domains = [domain for domain in sorted_domains if domain not in existing_domains]
@@ -131,5 +138,5 @@ if st.button("Extract Domains"):
     st.markdown(f'<a href="file://{html_file_path}" download="found_domains.html">Click to download HTML file</a>', unsafe_allow_html=True)
 
 # Display the download button after the code completes its extraction
-if not input_text:
-    st.write("Please enter some text to extract domains and titles.")
+if not uploaded_file and not input_text:
+    st.write("Please upload a text file or enter some domains to extract and display domain titles.")
