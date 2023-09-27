@@ -64,14 +64,21 @@ st.title("Domain Extractor, Sorter, and Title Checker App")
 # Input text area for user input
 input_text = st.text_area("Enter text:")
 
+# Input text box for the file path
+html_file_path = st.text_input("Enter HTML file path:", value="C:/Users/style/Downloads/found_domains.html")
+
 # Get the current date and time in the specified format
 current_datetime = datetime.datetime.now().strftime("%d %B %Y %A %I:%M %p")
 
-# Create an HTML file path
-html_file_path = os.path.join(os.path.expanduser('~'), 'Downloads', 'found_domains.html')
-
 # Initialize the serial number
 serial_number = 1
+
+# Extract the directory path from the HTML file path
+html_dir_path = os.path.dirname(html_file_path)
+
+# Check if the directory exists, and if not, create it
+if not os.path.exists(html_dir_path):
+    os.makedirs(html_dir_path)
 
 # Check if the HTML file exists, and if not, create it with a header
 if not os.path.exists(html_file_path):
@@ -92,9 +99,6 @@ else:
 if st.button("Extract Domains"):
     # Extract and sort unique domains and main domains from the input text
     sorted_domains, main_domains = extract_and_sort_domains(input_text)
-
-    # Filter out invalid domains
-    sorted_domains = [domain for domain in sorted_domains if not domain.startswith('https://39267-jawan.html')]
 
     # Remove duplicates from sorted_domains by checking against existing_domains
     sorted_domains = [domain for domain in sorted_domains if domain not in existing_domains]
@@ -120,23 +124,12 @@ if st.button("Extract Domains"):
                     # Append the new data to the existing HTML file with the serial number
                     file.write(f"<p style='background-color: {row_color};'>Serial Number: {serial_number} <a href='{domain}' target='_blank'>{domain}</a>: {title} ({extracted_date})</p>\n")
                     
-                # Create the directory if it doesn't exist
-os.makedirs(os.path.dirname(html_file_path), exist_ok=True)
+                    # Increment the serial number
+                    serial_number += 1
 
-# Initialize the serial number
-serial_number = 1
+    # Provide a download link for the updated HTML file
+    st.markdown(f'<a href="file://{html_file_path}" download="found_domains.html">Click to download HTML file</a>', unsafe_allow_html=True)
 
-# Check if the HTML file exists, and if not, create it with a header
-if not os.path.exists(html_file_path):
-    with open(html_file_path, 'w', encoding='utf-8') as file:
-        file.write("<html>\n<head><title>Found Domains and Titles</title></head>\n<body>\n")
-        file.write(f'<p style="background-color: pink; padding: 5px;">Extraction Date: {current_datetime}</p>\n')
-else:
-    # If the HTML file exists, read it to find the highest serial number and existing domains
-    with open(html_file_path, 'r', encoding='utf-8') as file:
-        html_content = file.read()
-        # Find the highest serial number
-        highest_serial = max([int(match.group(1)) for match in re.finditer(r"Serial Number: (\d+)", html_content)], default=1)
-        serial_number = highest_serial + 1
-        # Extract existing domains to check for duplicates later
-        existing_domains = set(re.findall(r"<a href='(https?://[^']+)'.*?</a>", html_content))
+# Display the download button after the code completes its extraction
+if not input_text:
+    st.write("Please enter some text to extract domains and titles.")
