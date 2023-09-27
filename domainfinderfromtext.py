@@ -94,7 +94,6 @@ else:
         serial_number = highest_serial + 1
         # Extract existing domains to check for duplicates later
         existing_domains = set(re.findall(r"<a href='(https?://[^']+)'.*?</a>", html_content))
-
 # Add a button to extract and display domain information
 if st.button("Extract Domains"):
     # Extract and sort unique domains and main domains from the input text
